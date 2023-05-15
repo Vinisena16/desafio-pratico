@@ -2,13 +2,18 @@ name: CD
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
+      - release
   
   workflow_dispatch:
   
 jobs:
-  CD: 
+  deploy-non-prod:
     runs-on: ubuntu-latest
+    
+    # só executa se houver push na branch release
+    if: github.ref == 'refs/heads/release'
     
     steps: 
       - name: Configure SSH Google Cloud
@@ -53,10 +58,30 @@ jobs:
       - name: Build the application
         run: npm run build
       
-      - name: Deploy the application
+      - name: Deploy the application to non-prod environment
         run: |
           ssh google-cloud 'sudo systemctl stop react-app'
-          ssh google-cloud 'sudo rm -rf /app/react-app'
-          scp -r build google-cloud:/home/github/react-app
-          ssh google-cloud 'sudo mv /home/github/react-app /app/react-app'
+          ssh google-cloud 'sudo rm -rf /app/react-app-non-prod'
+          scp -r build google-cloud:/home/github/react-app-non-prod
+          ssh google-cloud 'sudo mv /home/github/react-app-non-prod /app/react-app-non-prod'
           ssh google-cloud 'sudo systemctl start react-app'
+    
+  deploy-prod:
+    runs-on: ubuntu-latest
+    
+    # só executa se houver push na branch main
+    if: github.ref == 'refs/heads/main'
+    
+    steps: 
+      - name: Configure SSH Google Cloud
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$SSH_KEY" > ~/.ssh/google-cloud.key
+          chmod 600 ~/.ssh/google-cloud.key
+          cat >>~/.ssh/config <<END
+          Host google-cloud
+            HostName $SSH_HOST
+            User $SSH_USER
+            IdentityFile ~/.ssh/google-cloud.key
+            StrictHostKeyChecking no
+          END
