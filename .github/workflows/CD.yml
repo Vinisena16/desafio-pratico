@@ -10,10 +10,8 @@ on:
   
 jobs:
   deploy-non-prod:
-    runs-on: ubuntu-latest
-    
-    # só executa se houver push na branch release
     if: github.ref == 'refs/heads/release'
+    runs-on: ubuntu-latest
     
     steps: 
       - name: Configure SSH Google Cloud
@@ -67,10 +65,8 @@ jobs:
           ssh google-cloud 'sudo systemctl start react-app'
     
   deploy-prod:
-    runs-on: ubuntu-latest
-    
-    # só executa se houver push na branch main
     if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
     
     steps: 
       - name: Configure SSH Google Cloud
@@ -82,6 +78,5 @@ jobs:
           Host google-cloud
             HostName $SSH_HOST
             User $SSH_USER
-            IdentityFile ~/.ssh/google-cloud.key
-            StrictHostKeyChecking no
-          END
+            IdentityFile ~/.ssh
+
