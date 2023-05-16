@@ -65,10 +65,10 @@ jobs:
           ssh google-cloud 'sudo systemctl start react-app'
     
   deploy-prod:
-  if: github.ref == 'refs/heads/main'
-  runs-on: ubuntu-latest
+   if: github.ref == 'refs/heads/main'
+   runs-on: ubuntu-latest
 
-  steps: 
+   steps: 
     - name: Configure SSH Google Cloud
       run: |
         mkdir -p ~/.ssh/
@@ -117,5 +117,3 @@ jobs:
         scp -r build google-cloud:/home/github/react-app-prod
         ssh google-cloud 'sudo mv /home/github/react-app-prod /app/react-app-prod'
         ssh google-cloud 'sudo systemctl start react-app'
-
-
