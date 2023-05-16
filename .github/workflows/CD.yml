@@ -78,5 +78,5 @@ jobs:
           Host google-cloud
             HostName $SSH_HOST
             User $SSH_USER
-            IdentityFile ~/.ssh
+            IdentityFile ~/.ssh/google-cloud.key
 
