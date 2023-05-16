@@ -62,7 +62,6 @@ jobs:
           scp -r build google-cloud:/home/github/react-app-non-prod
           ssh google-cloud 'sudo mv /home/github/react-app-non-prod /app/react-app-non-prod'
           ssh google-cloud 'sudo systemctl start react-app'
-          ssh google-cloud '/usr/bin/npx serve /app/react-app-non-prod -p 8000'
     
   deploy-prod:
     if: github.ref == 'refs/heads/main'
@@ -118,4 +117,3 @@ jobs:
           scp -r build google-cloud:/home/github/react-app-prod
           ssh google-cloud 'sudo mv /home/github/react-app-prod /app/react-app-prod'
           ssh google-cloud 'sudo systemctl start react-app'
-          ssh google-cloud '/usr/bin/npx serve /app/react-app-prod -p 8000'
