@@ -118,4 +118,4 @@ jobs:
           scp -r build google-cloud:/home/github/react-app-prod
           ssh google-cloud 'sudo mv /home/github/react-app-prod /app/react-app-prod'
           ssh google-cloud 'sudo systemctl start react-app'
-          ssh google-cloud '/usr/bin/npx serve /app/react-app-prod -p 8080'
+          ssh google-cloud '/usr/bin/npx serve /app/react-app-prod -p 8000'
