@@ -5,24 +5,14 @@ on:
     branches:
       - main
       - release
-  
   workflow_dispatch:
-  
+
 jobs:
-  deploy:
+  deploy-non-prod:
+    if: github.ref == 'refs/heads/release'
     runs-on: ubuntu-latest
     
-    defaults:
-      run:
-        shell: bash
-    
-    env:
-      SSH_USER: ${{ secrets.GOOGLE_CLOUD_SSH_USER }}
-      SSH_KEY: ${{ secrets.GOOGLE_CLOUD_SSH_KEY }}
-      SSH_HOST: ${{ secrets.GOOGLE_CLOUD_SSH_HOST }}
-      APP_DIR: "/app/react-app-$ENV"
-    
-    steps:
+    steps: 
       - name: Configure SSH Google Cloud
         run: |
           mkdir -p ~/.ssh/
@@ -35,6 +25,10 @@ jobs:
             IdentityFile ~/.ssh/google-cloud.key
             StrictHostKeyChecking no
           END
+        env:
+          SSH_USER: ${{ secrets.GOOGLE_CLOUD_SSH_USER }}
+          SSH_KEY: ${{ secrets.GOOGLE_CLOUD_SSH_KEY }}
+          SSH_HOST: ${{ secrets.GOOGLE_CLOUD_SSH_HOST }}
     
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -44,42 +38,82 @@ jobs:
         with:
           node-version: 16.x
           
-      - name: Install dependencies
+      - name: Install dependencias
         run: npm install
-      
+        
       - name: Run the tests
         run: npm run test -- --coverage
         env:
           CD: true
-    
+      
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-    
+      
       - name: Build the application
         run: npm run build
-    
-      - name: Deploy the application
+      
+      - name: Deploy the application to non-prod environment
         run: |
           ssh google-cloud 'sudo systemctl stop react-app'
-          ssh google-cloud 'sudo rm -rf $APP_DIR'
-          scp -r build google-cloud:/home/github/$APP_DIR
-          ssh google-cloud "sudo mv /home/github/$APP_DIR $APP_DIR"
+          ssh google-cloud 'sudo rm -rf /app/react-app-non-prod'
+          scp -r build google-cloud:/home/github/react-app-non-prod
+          ssh google-cloud 'sudo mv /home/github/react-app-non-prod /app/react-app-non-prod'
           ssh google-cloud 'sudo systemctl start react-app'
-  
-  deploy-non-prod:
-    if: github.ref == 'refs/heads/release'
-    env:
-      ENV: "non-prod"
     
-    needs: deploy
-  
   deploy-prod:
     if: github.ref == 'refs/heads/main'
-    env:
-      ENV: "prod"
+    runs-on: ubuntu-latest
     
-    needs: deploy
-
+    steps: 
+      - name: Configure SSH Google Cloud
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$SSH_KEY" > ~/.ssh/google-cloud.key
+          chmod 600 ~/.ssh/google-cloud.key
+          cat >>~/.ssh/config <<END
+          Host google-cloud
+            HostName $SSH_HOST
+            User $SSH_USER
+            IdentityFile ~/.ssh/google-cloud.key
+            StrictHostKeyChecking no
+          END
+        env:
+          SSH_USER: ${{ secrets.GOOGLE_CLOUD_SSH_USER }}
+          SSH_KEY: ${{ secrets.GOOGLE_CLOUD_SSH_KEY }}
+          SSH_HOST: ${{ secrets.GOOGLE_CLOUD_SSH_HOST }}
+    
+      - name: Checkout repository
+        uses: actions/checkout@v3
+    
+      - name: Set up Node.js 16.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.x
+          
+      - name: Install dependencias
+        run: npm install
+        
+      - name: Run the tests
+        run: npm run test -- --coverage
+        env:
+          CD: true
+      
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      
+      - name: Build the application
+        run: npm run build
+      
+      - name: Deploy the application to prod environment
+        run: |
+          ssh google-cloud 'sudo systemctl stop react-app'
+          ssh google-cloud 'sudo rm -rf /app/react-app-prod'
+          scp -r build google-cloud:/home/github/react-app-prod
+          ssh google-cloud 'sudo mv /home/github/react-app-prod /app/react-app-prod'
+          ssh google-cloud 'sudo systemctl start react-app'
